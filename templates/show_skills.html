@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}
+Show Skills
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ category.name }}: Skills</h1>
+    
+    <div class="mb-3">
+        <form method="POST" action="{{ url_for('create_skill', category_id=category.id) }}">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-primary">Add Skill</button>
+        </form>
+    </div>
+    
+    {% if skills %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Users with this Skill</th>
+                <th>Average Level</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for skill in skills %}
+            <tr>
+                <td>{{ skill.name }}</td>
+                <td>{{ skill.count_users() }}</td>
+                <td>{{ skill.avg_level() }}</td>
+                <td>
+                    <form action="{{ url_for('delete_skill') }}" method="post" style="display: inline;">
+                        <input type="hidden" name="skill_id" value="{{ skill.id }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No skills found for this category.</p>
+    {% endif %}
+    <a href="{{ url_for('categories') }}" class="btn btn-secondary">Back to Categories</a>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>All Users</h1>
+    <a href="{{ url_for('create_user') }}" class="btn btn-primary">Create User</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Surname</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Last Login</th>
+                <th>Privacy Accepted</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.surname }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+                <td>{{ user.accepted_privacy }}</td>
+                <td>{{ user.format_last_login() }}</td>
+                <td>No Actions</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

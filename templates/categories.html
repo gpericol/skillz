@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% macro render_categories(categories) %}
+<ul>
+    {% for category in categories %}
+    <li>
+        {{ category.name }}
+        <form action="{{ url_for('delete_category') }}" method="post" style="display: inline;">
+            <input type="hidden" name="category_id" value="{{ category.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Sei sicuro di voler eliminare questa categoria e tutte le sue sottocategorie?');">Delete</button>
+        </form>
+        {% if category.children %}
+        {{ render_categories(category.children) }}
+        {% else %}
+            <a href="{{ url_for('show_skills', category_id=category.id) }}" class="btn btn-primary btn-sm">Skills ({{ category.count_skills() }}) </a>
+        {% endif %}
+    
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+
+{% block content %}
+<div class="container">
+    <h1>Categories</h1>
+    <a href="{{ url_for('create_category') }}" class="btn btn-primary">Create Category</a>
+    {{ render_categories(categories) }}
+</div>
+{% endblock %}

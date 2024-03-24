@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Create User{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Create user</h1>
+    {{ flask_macro.render_flashed_messages() }}
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control", id="name") }}
+        </div>
+        <div class="mb-3">
+            {{ form.surname.label(class="form-label") }}
+            {{ form.surname(class="form-control", id="surname") }}
+        </div>
+        <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control", id="email") }}
+        </div>
+        <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control", id="password") }}
+        </div>
+        <div class="mb-3">
+            {{ form.confirm_password.label(class="form-label") }}
+            {{ form.confirm_password(class="form-control", id="confirm_password") }}
+        </div>
+        <div class="mb-3">
+            {{ form.role.label(class="form-label") }}
+            {{ form.role(class="form-control", id="role") }}
+        </div>
+        <button type="submit" class="btn btn-primary">✍️ Register</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}User Skills{% endblock %}
+
+{% macro render_skills(skills) %}
+<ul class="skill-list">
+    {% for skill in skills %}
+    <li class="skill-item" data-skill-id="{{ skill.id }}" style="display: flex; align-items: center;">
+        <span class="{{ 'checked-skill' if skill.checked else '' }}">{{ skill.name }}</span>
+        - Level: <span class="skill-level">{{ skill.level if skill.checked else 'N/A' }}</span>
+        <form class="update-skill-form" style="display: flex; gap: 5px; margin-left: 10px;">
+            {% for i in range(0, 6) %}
+            <label>
+                <input type="radio" name="level" value="{{ i }}" {% if skill.level == i %}checked{% endif %}>
+                {{ i }}
+            </label>
+            {% endfor %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+
+
+{% macro render_categories(categories) %}
+<ul>
+    {% for category in categories %}
+    <li>
+        {{ category.name }}
+        {% if category.skills and category.skills|length %}
+        {{ render_skills(category.skills) }}
+        {% endif %}
+        {% if category.children %}
+        {{ render_categories(category.children) }}
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+
+{% block content %}
+<div class="container">
+    <h1>User Skills</h1>
+    {{ render_categories(categories_data) }}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.update-skill-form input[type="radio"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const form = this.closest('.update-skill-form');
+                const skillItem = form.closest('.skill-item');
+                const skillId = skillItem.getAttribute('data-skill-id');
+                const level = this.value;
+                const csrfToken = form.csrf_token.value;
+    
+                fetch('/set_skill', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({skill_id: skillId, level: level})
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    if (level == 0) {
+                        skillItem.querySelector('.skill-level').textContent = 'N/A';
+                    } else {
+                        skillItem.querySelector('.skill-level').textContent = level;
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    });
+</script>
+
+{% endblock %}

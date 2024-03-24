@@ -1,0 +1,1 @@
+SECRET_KEY = 'Spread_Love Not Hate'

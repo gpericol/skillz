@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}My Skills{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>My Skills Resume</h1>
+    {% for category, skills in categories_with_skills.items() %}
+        <h2>{{ category }}</h2>
+        <ul>
+            {% for skill in skills %}
+                <li>{{ skill.name }} - Level: {{ skill.level }}</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</div>
+{% endblock %}

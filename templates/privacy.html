@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Privacy Policy</h1>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc maximus, magna vitae ultricies maximus, nisi eros vestibulum dui, vitae lacinia ipsum est eget dolor. Sed sit amet sapien sit amet odio iaculis mollis. Phasellus eget enim vitae nunc luctus sodales a at erat. Curabitur vitae lacus nec velit tempor vestibulum. Aliquam erat volutpat. Vivamus cursus finibus ante, non consequat dolor pretium nec. Vivamus sollicitudin, dolor in aliquet faucibus, justo erat vehicula est, at auctor lorem quam eget diam. Curabitur quis risus vitae urna fermentum ullamcorper.</p>
+    
+    <h2>Accept Privacy Policy</h2>
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.accepted_privacy.label(class="form-label") }}
+            {{ form.accepted_privacy(class="form-control", id="accepted_privacy") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+{% endblock %}
