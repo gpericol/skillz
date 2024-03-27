@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, SelectField, StringField, PasswordField, SubmitField, TextAreaField, ValidationError
+from wtforms import BooleanField, HiddenField, SelectField, StringField, PasswordField, SubmitField, TextAreaField, ValidationError
 from wtforms.validators import DataRequired, EqualTo
 from models import User
 from wtforms.validators import Email
@@ -41,3 +41,7 @@ class DeleteSkillForm(FlaskForm):
 class UpdateSkillForm(FlaskForm):
     skill_id = HiddenField('Skill ID', validators=[DataRequired()])
     level = SelectField('Level', coerce=int, choices=[(0,'0'), (1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')])
+
+class RemovePrivacyForm(FlaskForm):
+    revoke_consent = BooleanField('Rimuovi il consenso alla privacy')
+    submit = SubmitField('Conferma')

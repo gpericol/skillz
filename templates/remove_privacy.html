@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Rimuovi Privacy{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Rimuovi Privacy</h1>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="mb-3 form-check">
+            {{ form.revoke_consent() }} {{ form.revoke_consent.label }}
+        </div>
+        {{ form.submit(class="btn btn-warning") }}
+    </form>
+</div>
+{% endblock %}

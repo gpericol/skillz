@@ -24,9 +24,15 @@
                     <div class="collapse navbar-collapse" id="navbarNav">
                         <ul class="navbar-nav">
                             
-                            {% if 'email' in session %}
+                            {% if 'email' in session and 'accepted_privacy' in session and session['accepted_privacy'] == True %}
                             <li class="nav-item">
                                 <a class="nav-link" href="/">{{ session['email'] }}</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('search') }}">🔍 Search Skills</a>
+                            </li>                            
+                            <li class="nav-item">
+                                <a class="nav-link" href="/">🧠 My Skills</a>
                             </li>
                             {% if session['role'] == 'admin' %}
                                 <li class="nav-item">
@@ -34,6 +40,14 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="/categories">📚 Categories</a>
+                                </li>
+                            {% endif %}
+                            {% if session['role'] == 'user' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/skills">🛠️ Set Skills</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/removeprivacy">🛡️ Remove Privacy</a>
                                 </li>
                             {% endif %}
                             <li class="nav-item">

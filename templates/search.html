@@ -1,0 +1,32 @@
+{% macro render_categories(categories) %}
+<ul>
+    {% for category in categories %}
+    <li>
+        {{ category.name }}
+        {% if category.skills and category.skills|length %}
+            <ul>
+                {% for skill in category.skills %}
+                    <li><a href="{{ url_for('skill_details', skill_id=skill.id) }}">{{ skill.name }}</a> - Users: {{ skill.count_users() }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if category.children %}
+            {{ render_categories(category.children) }}
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+
+{% extends "base.html" %}
+
+{% block title %}Search Skills{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Search Skills</h1>
+    {{ render_categories(categories) }}
+</div>
+{% endblock %}
+
+

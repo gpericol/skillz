@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Skill Details{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Skill Details: {{ skill.name }}</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Level</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in users_with_skill %}
+            <tr>
+                <td>{{ entry.user.name }} {{ entry.user.surname }}</td>
+                <td>{{ entry.level }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

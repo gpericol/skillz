@@ -1,5 +1,6 @@
 from datetime import datetime
 from functools import wraps
+import json
 import uuid
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, session
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -32,7 +33,7 @@ def check_role(required_roles):
                 return redirect(url_for('login'))
             elif session['role'] not in required_roles:
                 return redirect(url_for('index'))
-            # privacy in important
+            # privacy is important
             elif session['accepted_privacy'] is False:
                 return redirect(url_for('privacy'))
             return func(*args, **kwargs)
@@ -59,6 +60,14 @@ def prepare_categories_data(categories):
 
     return category_tree
 
+def audit_log(action, data):
+    user_id = session.get('id')
+    data = json.dumps(data)
+    new_log = AuditLog(user_id=user_id, action=action, data=data)
+    db.session.add(new_log)
+    db.session.commit()
+
+
 @app.route('/install', methods=['GET'])
 def install():
     existing_user = User.query.first()
@@ -73,6 +82,10 @@ def install():
             )
         db.session.add(admin_user)
         db.session.commit()
+        audit_log('create admin', {
+            'user_id': admin_user.id,
+            'email': admin_user.email
+            })
     
     return redirect(url_for('login'))
 
@@ -231,6 +244,11 @@ def create_user():
         )
         db.session.add(new_user)
         db.session.commit()
+        audit_log('create user', {
+            'user_id': new_user.id,
+            'user_name': f'{new_user.name} {new_user.surname}',
+            'email': new_user.email
+            })
         return redirect(url_for('users'))
     else:
         flash_errors(form)
@@ -247,6 +265,10 @@ def privacy():
             user.accepted_privacy = accepted_privacy
             db.session.commit()
             session['accepted_privacy'] = accepted_privacy
+            audit_log('accept privacy', {
+                'user_id': user.id,
+                'email': user.email
+                })
             return redirect(url_for('index'))
     return render_template('privacy.html', form=form)
 
@@ -286,7 +308,7 @@ def create_category():
         db.session.commit()
     else:
         flash_errors(form)
-        return redirect(url_for('categories'))
+
     return render_template('create_category.html', form=form)
 
 def delete_sub_categories(category):
@@ -304,6 +326,9 @@ def delete_category():
         delete_sub_categories(category)
         db.session.delete(category)
         db.session.commit()
+        audit_log('delete category', {
+            'category_id': category_id
+        })
     return redirect(url_for('categories'))
 
 @app.route('/showskills/<int:category_id>', methods=['GET'])
@@ -343,6 +368,45 @@ def delete_skill():
         UserSkill.query.filter_by(skill_id=skill_id).delete()
         db.session.delete(skill)
         db.session.commit()
-
+        audit_log('delete skill', {
+            'skill_id': skill_id
+        })
     return redirect(url_for('show_skills', category_id=skill.category_id))
 
+@app.route('/removeprivacy', methods=['GET', 'POST'])
+@check_role(['user'])
+def remove_privacy():
+    form = RemovePrivacyForm()
+    if form.validate_on_submit():
+        if form.revoke_consent.data:
+            # Assumi che current_user sia l'utente loggato
+            user = User.query.get_or_404(session.get('id'))
+            user.accepted_privacy = False
+            UserSkill.query.filter_by(user_id=user.id).delete()
+            db.session.commit()
+            session['accepted_privacy'] = False
+            audit_log('revoke privacy', {
+                'user_id': user.id,
+                'email': user.email
+                })
+            return redirect(url_for('index')) 
+    return render_template('remove_privacy.html', form=form)
+
+@app.route('/search', methods=['GET'])
+def search():
+    categories = Category.query.all()
+    categories_data = prepare_categories_data(categories)
+    add_skills_to_categories(categories_data)
+    return render_template('search.html', categories=categories_data)
+
+@app.route('/skill_details/<int:skill_id>', methods=['GET'])
+def skill_details(skill_id):
+    skill = Skill.query.get_or_404(skill_id)
+    user_skills = UserSkill.query.filter_by(skill_id=skill_id).order_by(UserSkill.level.desc()).all()
+    users_with_skill = [
+        {
+            'user': User.query.get(user_skill.user_id),
+            'level': user_skill.level
+        } for user_skill in user_skills
+    ]
+    return render_template('skill_details.html', skill=skill, users_with_skill=users_with_skill)
