@@ -8,14 +8,20 @@
     <table class="table">
         <thead>
             <tr>
-                <th>User</th>
+                <th>Name</th>
+                <th>Surname</th>
+                <th>Email</th>
+                <th>Is Senior</th>
                 <th>Level</th>
             </tr>
         </thead>
         <tbody>
             {% for entry in users_with_skill %}
-            <tr>
-                <td>{{ entry.user.name }} {{ entry.user.surname }}</td>
+            <tr {% if entry.user_senior %}class="table-primary"{% endif %}>
+                <td>{{ entry.user_name }}</td>
+                <td>{{ entry.user_surname }}</td>
+                <td>{{ entry.user_email }}</td>
+                <td>{{ entry.user_senior }}</td>
                 <td>{{ entry.level }}</td>
             </tr>
             {% endfor %}

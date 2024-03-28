@@ -104,6 +104,7 @@ def index():
         category = skill['category']
         if category not in categories_with_skills:
             categories_with_skills[category] = []
+        
         categories_with_skills[category].append({
             'name': skill['skill_name'],
             'level': skill['level']
@@ -164,30 +165,27 @@ def update_skill():
 
     form = UpdateSkillForm(formdata=None, data=data)
 
-    if form.validate():
-        user_id = session.get('id')
-        skill_id = form.skill_id.data
-        level = form.level.data
+    if not form.validate():
+        return jsonify({'error': 'Invalid data', 'details': form.errors}), 400
+    
+    user_id = session.get('id')
+    skill_id = form.skill_id.data
+    level = form.level.data
 
-        user_skill = UserSkill.query.filter_by(user_id=user_id, skill_id=skill_id).first()
+    user_skill = UserSkill.query.filter_by(user_id=user_id, skill_id=skill_id).first()
 
-        if user_skill:
-            user_skill.level = level
-            if level == 0:
-                db.session.delete(user_skill)
-        else:
-            if level > 0:
-                user_skill = UserSkill(user_id=user_id, skill_id=skill_id, level=level)
-                db.session.add(user_skill)
-
-        db.session.commit()
-        return jsonify({'success': 'Skill updated', 'skill_id': skill_id, 'level': level})
+    if user_skill:
+        user_skill.level = level
+        if level == 0:
+            db.session.delete(user_skill)
     else:
-        # Se i dati non sono validi, restituisci un messaggio di errore con i dettagli
-        errors = form.errors
-        return jsonify({'error': 'Invalid data', 'details': errors}), 400
+        if level > 0:
+            user_skill = UserSkill(user_id=user_id, skill_id=skill_id, level=level)
+            db.session.add(user_skill)
 
-
+    db.session.commit()
+    return jsonify({'success': 'Skill updated', 'skill_id': skill_id, 'level': level})
+    
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -401,11 +399,25 @@ def search():
 @app.route('/skill_details/<int:skill_id>', methods=['GET'])
 def skill_details(skill_id):
     skill = Skill.query.get_or_404(skill_id)
-    user_skills = UserSkill.query.filter_by(skill_id=skill_id).order_by(UserSkill.level.desc()).all()
-    users_with_skill = [
-        {
-            'user': User.query.get(user_skill.user_id),
-            'level': user_skill.level
-        } for user_skill in user_skills
-    ]
+    user_skills = UserSkill.query.join(User).filter(UserSkill.skill_id == skill_id).order_by(User.senior.desc(), UserSkill.level.desc()).all()
+    users_with_skill = [{
+        'user_name': us.user.name,
+        'user_surname': us.user.surname,
+        'user_senior': us.user.senior,
+        'user_email': us.user.email,
+        'level': us.level
+    } for us in user_skills]
     return render_template('skill_details.html', skill=skill, users_with_skill=users_with_skill)
+
+
+
+@app.route('/toggle_senior', methods=['POST'])
+@check_role(['admin'])
+def toggle_senior():
+    form = ToggleSeniorForm()
+    if form.validate_on_submit():
+        user_id = form.user_id.data
+        user = User.query.get_or_404(user_id)
+        user.senior = not user.senior
+        db.session.commit()
+    return redirect(url_for('users'))

@@ -19,6 +19,7 @@ class User(db.Model):
     surname = db.Column(db.String)
     password = db.Column(db.String)
     role = db.Column(db.String) # admin, user
+    senior = db.Column(db.Boolean, default=False)
     accepted_privacy = db.Column(db.Boolean, default=False)
     last_login = db.Column(db.DateTime, default=None)
 
@@ -73,6 +74,7 @@ class Skill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    
 
     def count_users(self):
         return UserSkill.query.filter_by(skill_id=self.id).count()
@@ -87,6 +89,7 @@ class UserSkill(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     skill_id = db.Column(db.Integer, db.ForeignKey('skill.id'))
     level = db.Column(db.Integer) # 1-5
+    user = db.relationship('User', backref='user_skills')
 
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

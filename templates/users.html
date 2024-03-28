@@ -10,6 +10,7 @@
                 <th>Surname</th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Is Senior</th>
                 <th>Role</th>
                 <th>Privacy Accepted</th>
                 <th>Last Login</th>  
@@ -18,14 +19,21 @@
         </thead>
         <tbody>
             {% for user in users %}
-            <tr>
+            <tr {% if user.senior %}class="table-primary"{% endif %}>
                 <td>{{ user.surname }}</td>
                 <td>{{ user.name }}</td>
                 <td>{{ user.email }}</td>
+                <td>{{ user.senior }}</td>
                 <td>{{ user.role }}</td>
                 <td>{{ user.accepted_privacy }}</td>
                 <td>{{ user.format_last_login() }}</td>
-                <td>No Actions</td>
+                <td>
+                    <form action="{{ url_for('toggle_senior') }}" method="post" style="display: inline;">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary btn-sm">Toggle Senior</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

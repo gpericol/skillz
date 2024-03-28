@@ -49,3 +49,6 @@ class UpdateSkillForm(FlaskForm):
 class RemovePrivacyForm(FlaskForm):
     revoke_consent = BooleanField('Rimuovi il consenso alla privacy')
     submit = SubmitField('Conferma')
+
+class ToggleSeniorForm(FlaskForm):
+    user_id = HiddenField('User ID', validators=[DataRequired()])
