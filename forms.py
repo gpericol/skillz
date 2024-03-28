@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, SelectField, StringField, PasswordField, SubmitField, TextAreaField, ValidationError
 from wtforms.validators import DataRequired, EqualTo
-from models import User
+from models import Category, User
 from wtforms.validators import Email
 from wtforms.validators import NumberRange
 from wtforms.fields import DecimalField
@@ -26,6 +26,10 @@ class CreateCategoryForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     parent_id = SelectField('Parent Category', coerce=int, choices=[(0, 'No Parent')])
     submit = SubmitField('Create Category')
+
+    def validate_name(self, name):
+        if Category.query.filter_by(name=name.data).first():
+            raise ValidationError('Category already exists')
 
 class DeleteCategoryForm(FlaskForm):
     category_id = HiddenField('Category ID', validators=[DataRequired()])

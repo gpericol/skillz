@@ -1,7 +1,5 @@
 from datetime import datetime
 from functools import wraps
-import json
-import uuid
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, session
 from werkzeug.security import check_password_hash, generate_password_hash
 from models import *
@@ -20,6 +18,13 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+def audit_log(action, data):
+    email = session.get('email', 'anonymous')
+    data = json.dumps(data) # thank you
+    new_log = AuditLog(email=email, action=action, data=data)
+    db.session.add(new_log)
+    db.session.commit()
+
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
@@ -29,8 +34,10 @@ def check_role(required_roles):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+            # if user is not logged in, redirect to login page
             if 'id' not in session:
                 return redirect(url_for('login'))
+            # if user is not in the required roles, redirect to index
             elif session['role'] not in required_roles:
                 return redirect(url_for('index'))
             # privacy is important
@@ -60,14 +67,6 @@ def prepare_categories_data(categories):
 
     return category_tree
 
-def audit_log(action, data):
-    user_id = session.get('id')
-    data = json.dumps(data)
-    new_log = AuditLog(user_id=user_id, action=action, data=data)
-    db.session.add(new_log)
-    db.session.commit()
-
-
 @app.route('/install', methods=['GET'])
 def install():
     existing_user = User.query.first()
@@ -82,10 +81,14 @@ def install():
             )
         db.session.add(admin_user)
         db.session.commit()
-        audit_log('create admin', {
-            'user_id': admin_user.id,
-            'email': admin_user.email
-            })
+        audit_log(
+            action='create admin', 
+            data={
+                'name': admin_user.name,
+                'surname': admin_user.surname,
+                'email': admin_user.email
+            }
+        )
     
     return redirect(url_for('login'))
 
@@ -135,7 +138,6 @@ def add_user_skills_to_categories(categories, user_skills):
         mark_user_skills(cat)
 
     return categories
-
 
 @app.route('/skills', methods=['GET'])
 @check_role(['user', 'admin'])
@@ -207,6 +209,14 @@ def login():
 
             user.last_login = datetime.now()
             db.session.commit()
+            audit_log(
+                action='login', 
+                data={
+                    'name': user.name,
+                    'surname': user.surname,
+                    'role': user.role
+                }
+            )
 
             return redirect(url_for('index'))
         else:
@@ -224,6 +234,7 @@ def logout():
 def users():
     users = User.query.all()
     return render_template('users.html', users=users)
+
 
 @app.route('/create_user', methods=['GET', 'POST'])
 @check_role(['admin'])
@@ -244,11 +255,6 @@ def create_user():
         )
         db.session.add(new_user)
         db.session.commit()
-        audit_log('create user', {
-            'user_id': new_user.id,
-            'user_name': f'{new_user.name} {new_user.surname}',
-            'email': new_user.email
-            })
         return redirect(url_for('users'))
     else:
         flash_errors(form)
@@ -260,15 +266,17 @@ def privacy():
     if form.validate_on_submit():
         accepted_privacy = form.accepted_privacy.data
         if accepted_privacy == 'True':
-            accepted_privacy = True
             user = User.query.get_or_404(session.get('id'))
-            user.accepted_privacy = accepted_privacy
+            user.accepted_privacy = True
             db.session.commit()
-            session['accepted_privacy'] = accepted_privacy
-            audit_log('accept privacy', {
-                'user_id': user.id,
-                'email': user.email
-                })
+            session['accepted_privacy'] = True
+            audit_log(
+                action='accept privacy', 
+                data={
+                    'name': user.name,
+                    'surname': user.surname,
+                }
+            )
             return redirect(url_for('index'))
     return render_template('privacy.html', form=form)
 
@@ -280,7 +288,6 @@ def categories():
             category.skills = category.get_skills()
             if category.children:
                 add_skills_to_categories(category.children)
-
 
     categories = Category.query.all()
     categories_data = prepare_categories_data(categories)
@@ -306,15 +313,11 @@ def create_category():
         new_category = Category(name=name, parent_id=parent_id)
         db.session.add(new_category)
         db.session.commit()
+        return redirect(url_for('categories'))
     else:
         flash_errors(form)
 
     return render_template('create_category.html', form=form)
-
-def delete_sub_categories(category):
-    for child in category.children:
-        delete_sub_categories(child)
-    db.session.delete(category)
 
 @app.route('/delete_category', methods=['POST'])
 @check_role(['admin'])
@@ -323,12 +326,8 @@ def delete_category():
     if form.validate_on_submit():
         category_id = form.category_id.data
         category = Category.query.get_or_404(category_id)
-        delete_sub_categories(category)
         db.session.delete(category)
         db.session.commit()
-        audit_log('delete category', {
-            'category_id': category_id
-        })
     return redirect(url_for('categories'))
 
 @app.route('/showskills/<int:category_id>', methods=['GET'])
@@ -368,9 +367,7 @@ def delete_skill():
         UserSkill.query.filter_by(skill_id=skill_id).delete()
         db.session.delete(skill)
         db.session.commit()
-        audit_log('delete skill', {
-            'skill_id': skill_id
-        })
+
     return redirect(url_for('show_skills', category_id=skill.category_id))
 
 @app.route('/removeprivacy', methods=['GET', 'POST'])
@@ -379,15 +376,17 @@ def remove_privacy():
     form = RemovePrivacyForm()
     if form.validate_on_submit():
         if form.revoke_consent.data:
-            # Assumi che current_user sia l'utente loggato
             user = User.query.get_or_404(session.get('id'))
             user.accepted_privacy = False
             UserSkill.query.filter_by(user_id=user.id).delete()
             db.session.commit()
             session['accepted_privacy'] = False
-            audit_log('revoke privacy', {
-                'user_id': user.id,
-                'email': user.email
+            audit_log(
+                action='revoke privacy', 
+                data={
+                    'user_id': user.id,
+                    'name': user.name,
+                    'surname': user.surname,
                 })
             return redirect(url_for('index')) 
     return render_template('remove_privacy.html', form=form)

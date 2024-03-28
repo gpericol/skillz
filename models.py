@@ -1,7 +1,16 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from flask import session
+import json
 
 db = SQLAlchemy()
+
+def model_audit_log(action, data):
+    email = session.get('email', 'anonymous')
+    data = json.dumps(data) # thank you
+    new_log = AuditLog(email=email, action=action, data=data)
+    db.session.add(new_log)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -46,19 +55,24 @@ class Category(db.Model):
     name = db.Column(db.String, unique=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     parent = db.relationship('Category', remote_side=[id])
-    children = db.relationship('Category')
+    children = db.relationship('Category', cascade="all, delete-orphan")
+    
+    skills = db.relationship('Skill', backref='category', cascade="all, delete-orphan")
     
     def count_skills(self):
         return Skill.query.filter_by(category_id=self.id).count()
     
     def get_skills(self):
         return Skill.query.filter_by(category_id=self.id).order_by(Skill.name).all()
+    
+    def __repr__(self):
+        children = "(" + ', '.join([child.name for child in self.children]) +" )"
+        return self.name + " " + children
 
 class Skill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
-    category = db.relationship('Category')
 
     def count_users(self):
         return UserSkill.query.filter_by(skill_id=self.id).count()
@@ -76,7 +90,64 @@ class UserSkill(db.Model):
 
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    email = db.Column(db.String) 
     action = db.Column(db.String)
     timestamp = db.Column(db.DateTime, default=datetime.now)
     data = db.Column(db.String)
+
+@event.listens_for(Skill, 'after_insert')
+def skill_after_insert(mapper, connection, target):
+    model_audit_log(
+        action='create skill', 
+        data={
+            'skill_id': target.id,
+            'skill_name': target.name,
+            'category_id': target.category_id,
+            'category_name': target.name
+        })
+
+@event.listens_for(Skill, 'before_delete')
+def skill_before_delete(mapper, connection, target):
+    UserSkill.query.filter_by(skill_id=target.id).delete()
+
+@event.listens_for(Skill, 'after_delete')
+def skill_after_delete(mapper, connection, target):
+    model_audit_log(
+        action='delete skill', 
+        data={
+        'skill_id': target.id,
+        'skill_name': target.name
+    })
+
+
+@event.listens_for(Category, 'after_insert')
+def category_after_insert(mapper, connection, target):
+    model_audit_log(
+        action='create category', 
+        data={
+            'category_id': target.id,
+            'name': target.name,
+            'parent_id': target.parent_id
+        })
+
+
+@event.listens_for(Category, 'after_delete')
+def category_after_delete(mapper, connection, target):
+    model_audit_log(
+        action='delete category', 
+        data={
+            'category_id': target.id,
+            'category_name': target.name
+    })
+
+@event.listens_for(User, 'after_insert')
+def skill_after_insert(mapper, connection, target): 
+    model_audit_log(
+        action='create user', 
+        data={
+            'skill_id': target.id,
+            'skill_name': target.name,
+            'surname': target.surname,
+            'role': target.role,
+            'email': target.email
+        })

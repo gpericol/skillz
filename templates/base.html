@@ -34,6 +34,9 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="/">🧠 My Skills</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/skills">🛠️ Set Skills</a>
+                            </li>
                             {% if session['role'] == 'admin' %}
                                 <li class="nav-item">
                                     <a class="nav-link" href="/users">👥 Users</a>
@@ -43,9 +46,6 @@
                                 </li>
                             {% endif %}
                             {% if session['role'] == 'user' %}
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/skills">🛠️ Set Skills</a>
-                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="/removeprivacy">🛡️ Remove Privacy</a>
                                 </li>
